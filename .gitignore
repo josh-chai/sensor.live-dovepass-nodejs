@@ -5,7 +5,3 @@ package-lock.json
 
 # Dependency directories
 node_modules/
-!certs/
-!storages/
-certs/*
-storages/*
