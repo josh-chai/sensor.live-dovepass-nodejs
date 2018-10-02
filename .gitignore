@@ -5,7 +5,5 @@ package-lock.json
 
 # Dependency directories
 node_modules/
-
-# Config files
-certs/*
-storage/*
+./certs/*
+./storage/*
