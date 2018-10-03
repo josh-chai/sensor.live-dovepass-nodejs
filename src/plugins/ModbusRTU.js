@@ -1,11 +1,20 @@
 'strict'
 
 const ModbusSerial = require('modbus-serial')
-const net = require('net')
-const asyncForEach = require('./AsyncForEach')
-const { rtu: functions } = require('./ModbusFunctions')
-const encoders = require('./Encoders')
-const decoders = require('./Decoders')
+const asyncForEach = require('../utils/AsyncForEach')
+const encoders = require('../../Encoders')
+const decoders = require('../../Decoders')
+
+const functions = {
+    '0x01': 'readCoils',
+    '0x02': 'readDiscreteInputs',
+    '0x03': 'readHoldingRegisters',
+    '0x04': 'readInputRegisters',
+    '0x05': 'writeCoil',
+    '0x06': 'writeRegister',
+    '0x0F': 'writeCoils',
+    '0x10': 'writeRegisters'
+}
 
 class ModbusRTU {
     constructor(config) {

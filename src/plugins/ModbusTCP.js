@@ -2,10 +2,20 @@
 
 const Modbus = require('jsmodbus')
 const net = require('net')
-const asyncForEach = require('./AsyncForEach')
-const { tcp: functions } = require('./ModbusFunctions')
-const encoders = require('./Encoders')
-const decoders = require('./Decoders')
+const asyncForEach = require('../utils/AsyncForEach')
+const encoders = require('../../Encoders')
+const decoders = require('../../Decoders')
+
+const functions = {
+    '0x01': 'readCoils',
+    '0x02': 'readDiscreteInputs',
+    '0x03': 'readHoldingRegisters',
+    '0x04': 'readInputRegisters',
+    '0x05': 'writeSingleCoil',
+    '0x06': 'writeSingleRegister',
+    '0x0F': 'writeMultipleCoils',
+    '0x10': 'writeMultipleRegisters'
+}
 
 class ModbusTCP {
     constructor(config) {
@@ -33,7 +43,7 @@ class ModbusTCP {
         this.socket.on('error', (error) => {
             console.log(`[Modbus TCP Connection Error]\nName: ${this.config.name}\tHost: ${this.config.host}\tPort: ${this.config.port}\t${error}`)
         })
-        this.socket.on('close', () => {            
+        this.socket.on('close', () => {
             console.log(`[Modbus TCP Connection Close]\nName: ${this.config.name}\tHost: ${this.config.host}\tPort: ${this.config.port}`)
             if (this.config.auto_reconnect) {
                 setTimeout(() => {
