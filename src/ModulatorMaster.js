@@ -148,7 +148,8 @@ class ModulatorMaster {
                         return null
                     }
                     let parent = this
-                    this.connections[config.name] = {
+                    this.connections[config.id] = {
+                        id: config.id,
                         name: config.name,
                         config: config,
                         worker: null,
@@ -212,27 +213,44 @@ class ModulatorMaster {
                             }, this.config.shadow_report_rate)
                         }
                     }
-                    this.connections[config.name].start()
-                    return this.connections[config.name]
+                    this.connections[config.id].start()
+                    return this.connections[config.id]
                 },
-                get(name) {
-                    return this.connections[name] || null
+                get(id) {
+                    return this.connections[id] || null
                 },
-                remove(name) {
-                    let connection = this.get(name)
+                getByName(name) {
+                    let id = Object.keys(this.connections).filter(id => {
+                        return this.connections[id].name === name
+                    }).shift()
+                    return this.connections[id] || null
+                },
+                remove(id) {
+                    let connection = this.get(id)
                     if (connection) {
                         connection.worker.send({
                             command: MASTER_COMMAND.TERMINATE_CONNECTION
                         })
                     }
+                    return this
+                },
+                reportThingShadow() {
+                    that.iot_client.updateThingShadow({
+                        state: {
+                            reported: {
+                                connections: Object.keys(this.connections)
+                            }
+                        }
+                    })
+                    return this
                 },
                 validate(config) {
-                    return PLUGINS.indexOf(config.type) > -1 && config.name !== ''
+                    return PLUGINS.indexOf(config.type) > -1 && config.id !== '' && config.name !== ''
                 },
                 collapseDatasets() {
                     let datasets = {}
-                    for (let name in this.connections) {
-                        let connection = this.connections[name]
+                    for (let id in this.connections) {
+                        let connection = this.connections[id]
                         datasets = {
                             ...datasets,
                             ...connection.dataset
@@ -257,6 +275,7 @@ class ModulatorMaster {
                         this.log(`Connection [${connection.name}] start failed`, 'error')
                     }
                 }
+                this.$connection().reportThingShadow()
                 resolve(this.connections)
             } catch (exception) {
                 reject(exception)
@@ -265,14 +284,15 @@ class ModulatorMaster {
     }
     registerSetConnectionJob() {
         this.jobs_client.on('SetConnection', (config, next) => {
-            let connection = this.$connection().get(config.name)
+            let connection = this.$connection().get(config.id)
             if (connection) {
-                this.$connection().remove(config.name)
+                this.$connection().remove(config.id)
                 this.log(`Connection [${connection.name}] stopped`, 'success')
             }
             let new_connection = this.$connection().create(config)
             if (new_connection) {
                 this.log(`Connection [${new_connection.name}] started`, 'success')
+                this.$connection().reportThingShadow()
                 this.storage.storeConnectionConfig(config)
                 next(true)
             } else {
@@ -282,7 +302,12 @@ class ModulatorMaster {
     }
     registerDeleteConnectionJob() {
         this.jobs_client.on('DeleteConnection', (config, next) => {
-            console.log('Receive Job', config)
+            let connection = this.$connection().get(config.id)
+            if (connection) {
+                this.$connection().remove(config.id).reportThingShadow()
+                this.storage.deleteConnectionConfig(config)
+                this.log(`Schedule [${connection.name}] stopped.`, 'success')
+            }
             next(true)
         })
     }
@@ -316,10 +341,11 @@ class ModulatorMaster {
                     return this.schedules[config.id]
                 },
                 remove(id) {
-                    if (this.schedules[id]) {
-                        this.schedules[id].cron.stop()
+                    let schedule = this.get(id)
+                    if (schedule) {
+                        schedule.cron.stop()
+                        delete this.schedules[id]
                     }
-                    delete this.schedules[id]
                     return this
                 },
                 get(id) {
@@ -402,7 +428,7 @@ class ModulatorMaster {
         }
         for (let name in state_groups) {
             let desired_state = state_groups[name]
-            let current_connection = this.$connection().get(name)
+            let current_connection = this.$connection().getByName(name)
             if (current_connection) {
                 current_connection.desired(desired_state, is_local)
             }
@@ -421,7 +447,10 @@ class ModulatorMaster {
                     return this.rules[config.id]
                 },
                 remove(id) {
-                    delete this.rules[id]
+                    let rule = this.get(id)
+                    if (rule) {
+                        delete this.rules[id]
+                    }
                     return this
                 },
                 get(id) {

@@ -11,8 +11,7 @@ class Storage {
     getConnectionsConfig() {
         let files = []
         fs.readdirSync(STORAGE_PATH).forEach(file => {
-            let regexp = new RegExp(`^(${PLUGINS.join('|')})-(.*)\.json$`)
-            if (file.match(regexp)) {
+            if (file.match(/^(Connection)-(.*)\.json/)) {
                 files.push(file)
             }
         })
@@ -97,7 +96,7 @@ class Storage {
         return this
     }
     _getConnectionFileName(config) {
-        return `${STORAGE_PATH}/${config.type}-${config.name}.json`
+        return `${STORAGE_PATH}/Connection-${config.id}.json`
     }
     _getScheuldeFileName(config) {
         return `${STORAGE_PATH}/Schedule-${config.id}.json`
