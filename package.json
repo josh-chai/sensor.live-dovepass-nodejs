@@ -14,7 +14,7 @@
         "cron": "^1.4.1",
         "dotenv": "^5.0.1",
         "jsmodbus": "^3.1.0",
-        "sensor.live-things-registry": "^1.0.1",
+        "sensor.live-things-registry": "^1.0.4",
         "serialport": "^7.0.2"
     },
     "devDependencies": {

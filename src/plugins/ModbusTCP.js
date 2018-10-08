@@ -30,26 +30,28 @@ class ModbusTCP {
            host: this.config.host,
            port: this.config.port
         }
-        let poll_timeout = parseInt(this.config.poll_timeout) || 5
+        let poll_timeout = parseInt(this.config.poll_timeout) || 5000
+        let reconnect_timeout = parseInt(this.config.reconnect_timeout) || 3000
+        console.log(`[Modbus TCP connecting]\tName: ${this.config.name}\tHost: ${this.config.host}\tPort: ${this.config.port}`)
         this.socket = new net.Socket()
-        this.socket.setTimeout(poll_timeout * 1000)
+        this.socket.setTimeout(poll_timeout)
         this.socket.connect(options)
         this.socket.on('connect', () => {
-            console.log(`[Modbus TCP Connected]\nName: ${this.config.name}\tHost: ${this.config.host}\tPort: ${this.config.port}`)
+            console.log(`[Modbus TCP connected]\tName: ${this.config.name}\tHost: ${this.config.host}\tPort: ${this.config.port}`)
             setTimeout(() => {
                 this.scan()
             }, 1000)
         })
         this.socket.on('error', (error) => {
-            console.log(`[Modbus TCP Connection Error]\nName: ${this.config.name}\tHost: ${this.config.host}\tPort: ${this.config.port}\t${error}`)
+            console.log(`[Modbus TCP connection error]\tName: ${this.config.name}\tHost: ${this.config.host}\tPort: ${this.config.port}\t${error}`)
         })
         this.socket.on('close', () => {
-            console.log(`[Modbus TCP Connection Close]\nName: ${this.config.name}\tHost: ${this.config.host}\tPort: ${this.config.port}`)
+            console.log(`[Modbus TCP connection close]\tName: ${this.config.name}\tHost: ${this.config.host}\tPort: ${this.config.port}`)
             if (this.config.auto_reconnect) {
                 setTimeout(() => {
-                    console.log(`[Modbus TCP Reconnect]\nName: ${this.config.name}\tHost: ${this.config.host}\tPort: ${this.config.port}`)
+                    console.log(`[Modbus TCP reconnect]\tName: ${this.config.name}\tHost: ${this.config.host}\tPort: ${this.config.port}`)
                     this.socket.connect(options)
-                }, this.config.reconnect_timeout * 1000)
+                }, reconnect_timeout)
             }
         })
         this.config.devices.forEach(device => {
@@ -90,12 +92,12 @@ class ModbusTCP {
             })().then(result => {
                 dataset[`${this.config.name}-${slave_id}-${node.property}`] = value
             }, error => {
-                console.log(`[Modbus TCP Write Error]\nName: ${this.config.name}\tHost: ${this.config.host}\tPort: ${this.config.port}\t${error.message}`)
+                console.log(`[Modbus TCP Write Error]\tName: ${this.config.name}\tHost: ${this.config.host}\tPort: ${this.config.port}\t${error.message}`)
             })
         }
         if (Object.keys(dataset).length > 0) {
             process.send({
-                command: is_local ? 'shadowReported' : 'shadowClearDelta',
+                command: is_local ? 'shadow_reported' : 'shadow_clear_delta',
                 payload: dataset
             })
         }
@@ -127,19 +129,20 @@ class ModbusTCP {
                     }
                     dataset[`${this.config.name}-${device.slave_id}-${node.property}`] = result
                 }, error => {
-                    console.log(`[Modbus TCP Scan Error]\nName: ${this.config.name}\tHost: ${this.config.host}\tPort: ${this.config.port}\t${error.message}`)
+                    console.log(`[Modbus TCP Scan Error]\tName: ${this.config.name}\tHost: ${this.config.host}\tPort: ${this.config.port}\t${error.message}`)
                 })
             })
         })
         if (Object.keys(dataset).length > 0) {
             process.send({
-                command: 'shadowReported',
+                command: 'shadow_reported',
                 payload: dataset
             })
         }
+        let poll_rate = parseInt(this.config.poll_rate) || 5000
         setTimeout(() => {
             this.scan()
-        }, (parseInt(this.config.poll_rate) || 5) * 1000)
+        }, poll_rate)
     }
     terminate(next) {
         this.socket.end()

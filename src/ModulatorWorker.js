@@ -9,13 +9,13 @@ class ModulatorWorker {
     constructor() {
         this.instance = null
     }
-    initialize() {
+    run() {
         process.on('message', (message) => {
             if (this.instance === null && message.command === MASTER_COMMAND.START_CONNECTION) {
                 this._createInstance(message.data)
             } else if (this.instance !== null && message.command === MASTER_COMMAND.SHADOW_DESIRED) {
                 this._desiredInstance(message.data, message.is_local === true)
-            } else if (this.instance !== null && message.command === MASTER_COMMAND.TERMINATE) {
+            } else if (this.instance !== null && message.command === MASTER_COMMAND.TERMINATE_CONNECTION) {
                 this._terminateInstance()
             } else {
                 console.log(`Connection not ready.`.red)

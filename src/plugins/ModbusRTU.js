@@ -31,20 +31,22 @@ class ModbusRTU {
             databits: this.config.data_bits,
             stopbits: this.config.stop_bits
         }
-        let poll_timeout = parseInt(this.config.poll_timeout) || 5
+        let poll_timeout = parseInt(this.config.poll_timeout) || 5000
+        let reconnect_timeout = parseInt(this.config.reconnect_timeout) || 3000
+        console.log(`[Modbus RTU connecting]\tName: ${this.config.name}\tPort: ${this.config.serial_port}\tBaudRate: ${this.config.baud_rate}`)
         this.client = new ModbusSerial()
         this.client.connectRTU(this.config.serial_port, options, (error) => {
-            this.client.setTimeout(poll_timeout * 1000)
+            this.client.setTimeout(poll_timeout)
             if (error) {
-                console.log(`[Modbus RTU Connect Failed]\nName: ${this.config.name}\tPort: ${this.config.serial_port}\tBaudRate: ${this.config.baud_rate}`)
+                console.log(`[Modbus RTU connect failed]\tName: ${this.config.name}\tPort: ${this.config.serial_port}\tBaudRate: ${this.config.baud_rate}`)
                 if (this.config.auto_reconnect) {
                     setTimeout(() => {
                         this.initialize()
-                    }, this.config.reconnect_timeout * 1000)
+                    }, reconnect_timeout)
                 }
                 return
             }
-            console.log(`[Modbus RTU Connected]\nName: ${this.config.name}\tPort: ${this.config.serial_port}\tBaudRate: ${this.config.baud_rate}`)
+            console.log(`[Modbus RTU connected]\tName: ${this.config.name}\tPort: ${this.config.serial_port}\tBaudRate: ${this.config.baud_rate}`)
             this.scan()
         })
         this.client._port.on('open', () => {
@@ -57,7 +59,7 @@ class ModbusRTU {
             if (!this.retry_interval && this.config.auto_reconnect) {
                 this.retry_interval = setInterval(() => {
                     this.client._port.open()
-                }, this.config.reconnect_timeout * 1000)
+                }, reconnect_timeout)
             }
         })
         this.client._port.on('error', (error) => {
@@ -104,15 +106,15 @@ class ModbusRTU {
             })().then(result => {
                 dataset[`${this.config.name}-${slave_id}-${node.property}`] = value
             }, error => {
-                desired_errors.push(console.log(`[Modbus RTU Write Error]\nName: ${this.config.name}\tPort: ${this.config.serial_port}\tBaudRate: ${this.config.baud_rate}\t${error.message}`))
+                desired_errors.push(console.log(`[Modbus RTU Write Error]\tName: ${this.config.name}\tPort: ${this.config.serial_port}\tBaudRate: ${this.config.baud_rate}\t${error.message}`))
             })
         }
         if (desired_errors.length > 0) {
-            console.log(`[Modbus RTU Write Error]\nName: ${this.config.name}\tPort: ${this.config.serial_port}\tBaudRate: ${this.config.baud_rate}`)
+            console.log(`[Modbus RTU Write Error]\tName: ${this.config.name}\tPort: ${this.config.serial_port}\tBaudRate: ${this.config.baud_rate}`)
         }
         if (Object.keys(dataset).length > 0) {
             process.send({
-                command: is_local ? 'shadowReported' : 'shadowClearDelta',
+                command: is_local ? 'shadow_reported' : 'shadow_clear_delta',
                 payload: dataset
             })
         }
@@ -151,20 +153,24 @@ class ModbusRTU {
             })
         })
         if (scan_errors.length > 0) {
-            console.log(`[Modbus RTU Scan Error]\nName: ${this.config.name}\tPort: ${this.config.serial_port}\tBaudRate: ${this.config.baud_rate}`)
+            console.log(`[Modbus RTU Scan Error]\tName: ${this.config.name}\tPort: ${this.config.serial_port}\tBaudRate: ${this.config.baud_rate}`)
         }
         if (Object.keys(dataset).length > 0) {
             process.send({
-                command: 'shadowReported',
+                command: 'shadow_reported',
                 payload: dataset
             })
         }
-        console.log(Object.keys(dataset).length)
+        let poll_rate = parseInt(this.config.poll_rate) || 5000
         setTimeout(() => {
             this.scan()
-        }, (parseInt(this.config.poll_rate) || 5) * 1000)
+        }, poll_rate)
     }
     terminate(next) {
+        if (this.retry_interval) {
+            clearInterval(this.retry_interval)
+            this.retry_interval = null
+        }
         this.client.close(() => {
             next()
         })
