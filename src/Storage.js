@@ -5,7 +5,7 @@ const fs = require('fs')
 const {
     PLUGINS,
     STORAGE_PATH
-} = require('./ModulatorConstant')
+} = require('./AnestConstant')
 
 class Storage {
     getConnectionsConfig() {

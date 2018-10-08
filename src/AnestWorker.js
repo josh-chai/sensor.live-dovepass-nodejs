@@ -1,11 +1,11 @@
 'strict'
 
 const fs = require('fs')
-const { MASTER_COMMAND, WORKER_COMMAND, PLUGINS } = require('./ModulatorConstant')
+const { MASTER_COMMAND, WORKER_COMMAND, PLUGINS } = require('./AnestConstant')
 
 require('colors')
 
-class ModulatorWorker {
+class AnestWorker {
     constructor() {
         this.instance = null
     }
@@ -51,4 +51,4 @@ class ModulatorWorker {
     }
 }
 
-module.exports = ModulatorWorker
+module.exports = AnestWorker

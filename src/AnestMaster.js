@@ -10,9 +10,9 @@ const {
     PLUGINS,
     STORAGE_PATH,
     MASTER_COMMAND
-} = require('./ModulatorConstant')
+} = require('./AnestConstant')
 
-class ModulatorMaster {
+class AnestMaster {
     constructor({ thing_name, endpoint, keys_path, port = 8883, enable_log = false, enable_debug = false }) {
         this.thing_name = thing_name
         this.keys_path = keys_path
@@ -598,4 +598,4 @@ class ModulatorMaster {
     }
 }
 
-module.exports = ModulatorMaster
+module.exports = AnestMaster

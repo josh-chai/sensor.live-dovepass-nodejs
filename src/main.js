@@ -1,7 +1,7 @@
 'strict'
 
 const cluster = require('cluster')
-const { Master, Worker } = require('./Modulator')
+const { Master, Worker } = require('./Anest')
 const ThingRegistry = require('sensor.live-things-registry')
 
 if (cluster.isMaster) {
