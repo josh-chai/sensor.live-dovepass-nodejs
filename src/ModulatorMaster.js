@@ -299,7 +299,18 @@ class ModulatorMaster {
                         id: config.id,
                         name: config.name,
                         cron: new CronJob(config.expression, () => {
-                            that.executeDesired(config.actions, true)
+                            let actions = {}
+                            for (let action of config.actions) {
+                                actions[action.command] = action.value
+                            }
+                            that.executeDesired(actions, true)
+                            setTimeout(() => {
+                                let thens = {}
+                                for (let then of config.thens) {
+                                    thens[then.command] = then.value
+                                }
+                                that.executeDesired(thens, true)
+                            }, config.after)
                         }, null, true, 'UTC')
                     }
                     return this.schedules[config.id]
